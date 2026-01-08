@@ -45,15 +45,17 @@ export async function chatCompletion(
   const systemMessage = hasSystemMessage && options?.preserveSystemMessage
     ? undefined // Don't add default system message if one is provided and we want to preserve it
     : context
-    ? `You are an intelligent advisor for ADA Compliance transformation. Use the following context from the knowledge base to answer questions accurately and helpfully:\n\n${context}\n\nIf the context doesn't contain relevant information, use your general knowledge but indicate when you're doing so.`
-    : 'You are an intelligent advisor for ADA Compliance transformation. Provide helpful, accurate information about project management and ADA compliance.';
+    ? `You are an intelligent advisor for Blackboard Ultra. Use the following context from the knowledge base to answer questions accurately and helpfully:\n\n${context}\n\nIf the context doesn't contain relevant information, use your general knowledge but indicate when you're doing so.\n\nIMPORTANT: Write in a natural, conversational tone. Do not use markdown formatting like ### headers, **bold**, *italic*, code blocks, or bullet points. Write as if you're speaking directly to the user in plain, human-friendly text.`
+    : 'You are an intelligent advisor for Blackboard Ultra. Provide helpful, accurate information about Blackboard Ultra, project management, and content updates.\n\nIMPORTANT: Write in a natural, conversational tone. Do not use markdown formatting like ### headers, **bold**, *italic*, code blocks, or bullet points. Write as if you\'re speaking directly to the user in plain, human-friendly text.';
 
   const allMessages = systemMessage 
     ? [{ role: 'system' as const, content: systemMessage }, ...messages]
     : messages;
 
+  const model = process.env.OPENAI_MODEL || 'gpt-4.1-mini';
+  
   const response = await client.chat.completions.create({
-    model: 'gpt-4o-mini',
+    model: model,
     messages: allMessages,
     temperature: options?.temperature ?? 0.7,
     max_tokens: 4000, // Increased for longer template filling

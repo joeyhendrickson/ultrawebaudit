@@ -1,5 +1,6 @@
 import { google } from 'googleapis';
 import { OAuth2Client } from 'google-auth-library';
+import { Readable } from 'stream';
 
 let oauth2Client: OAuth2Client | null = null;
 
@@ -113,5 +114,53 @@ export async function getFileContent(fileId: string, mimeType?: string): Promise
   // Regular files can be downloaded directly
   const buffer = await downloadFile(fileId);
   return buffer;
+}
+
+export async function uploadFileToGoogleDrive(
+  fileName: string,
+  fileContent: Buffer | string,
+  mimeType: string = 'text/plain',
+  folderId?: string
+): Promise<{ fileId: string; webViewLink?: string }> {
+  const drive = await getGoogleDriveClient();
+  
+  const targetFolderId = folderId || process.env.GOOGLE_DRIVE_FOLDER_ID;
+  
+  if (!targetFolderId) {
+    throw new Error('Google Drive folder ID is required. Set GOOGLE_DRIVE_FOLDER_ID in environment variables.');
+  }
+
+  // Convert string to Buffer if needed
+  const buffer = typeof fileContent === 'string' ? Buffer.from(fileContent, 'utf-8') : fileContent;
+
+  try {
+    const fileMetadata = {
+      name: fileName,
+      parents: [targetFolderId],
+    };
+
+    // Convert Buffer to a Readable stream for the Google Drive API
+    const stream = Readable.from(buffer);
+
+    const media = {
+      mimeType,
+      body: stream,
+    };
+
+    const response = await drive.files.create({
+      requestBody: fileMetadata,
+      media: media,
+      fields: 'id, name, webViewLink',
+    });
+
+    return {
+      fileId: response.data.id || '',
+      webViewLink: response.data.webViewLink || undefined,
+    };
+  } catch (error) {
+    console.error('Error uploading file to Google Drive:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    throw new Error(`Failed to upload file to Google Drive: ${errorMessage}`);
+  }
 }
 

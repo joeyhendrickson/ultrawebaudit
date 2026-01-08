@@ -2,18 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import ChatInterface from '@/components/ChatInterface';
-import DocumentProcessor from '@/components/DocumentProcessor';
 import GoogleDriveTest from '@/components/GoogleDriveTest';
 import DocumentBrowser from '@/components/DocumentBrowser';
 import AppMenu from '@/components/AppMenu';
-import PDFProcessor from '@/components/PDFProcessor';
 import WebsiteScanner from '@/components/WebsiteScanner';
 import Analytics from '@/components/Analytics';
-import Triage from '@/components/Triage';
-import PDFLinkProcessor from '@/components/PDFLinkProcessor';
+import YouTubeTranscriber from '@/components/YouTubeTranscriber';
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<'chat' | 'documents' | 'drive' | 'browser'>('chat');
+  const [activeTab, setActiveTab] = useState<'chat' | 'browser'>('chat');
   const [activeApp, setActiveApp] = useState<string | null>(null);
 
   useEffect(() => {
@@ -42,10 +39,10 @@ export default function Home() {
             <AppMenu onSelectApp={handleAppSelect} />
           </div>
           <h1 className="text-5xl font-extrabold text-black mb-3">
-            ADA Compliance Advisor
+            Ultra Advisor
           </h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            WCAG 2.1 AA FAQ and ADA Compliance Management System, Powered by AI
+            Ultra How To Advisor and Web Content Analysis Tool, Powered by AI
           </p>
         </header>
 
@@ -70,49 +67,7 @@ export default function Home() {
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                 </svg>
-                WCAG 2.1 AA Advisor
-              </span>
-            </button>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                console.log('Documents tab clicked');
-                setActiveTab('documents');
-              }}
-              className={`flex-1 min-w-[140px] py-3 px-6 rounded-xl font-semibold transition-all duration-300 ${
-                activeTab === 'documents'
-                  ? 'bg-black text-white shadow-lg transform scale-105'
-                  : 'text-black hover:bg-gray-100 border border-gray-300'
-              }`}
-            >
-              <span className="flex items-center justify-center gap-2">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                Project Development
-              </span>
-            </button>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                console.log('Drive tab clicked');
-                setActiveTab('drive');
-              }}
-              className={`flex-1 min-w-[140px] py-3 px-6 rounded-xl font-semibold transition-all duration-300 ${
-                activeTab === 'drive'
-                  ? 'bg-black text-white shadow-lg transform scale-105'
-                  : 'text-black hover:bg-gray-100 border border-gray-300'
-              }`}
-            >
-              <span className="flex items-center justify-center gap-2">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
-                </svg>
-                Vectorization Setup
+                ULTRA Advisor
               </span>
             </button>
             <button
@@ -140,24 +95,18 @@ export default function Home() {
 
           {/* Tab Content */}
           <div className="bg-white rounded-2xl shadow-2xl p-6 lg:p-8 border-2 border-black">
-            {activeApp === 'pdf-processor' ? (
-              <PDFProcessor onBack={() => setActiveApp(null)} />
-            ) : activeApp === 'website-scanner' ? (
+            {activeApp === 'website-scanner' ? (
               <WebsiteScanner onBack={() => setActiveApp(null)} />
             ) : activeApp === 'analytics' ? (
               <Analytics onBack={() => setActiveApp(null)} />
-            ) : activeApp === 'triage' ? (
-              <Triage onBack={() => setActiveApp(null)} />
-            ) : activeApp === 'pdf-link-processor' ? (
-              <PDFLinkProcessor onBack={() => setActiveApp(null)} />
+            ) : activeApp === 'youtube-transcriber' ? (
+              <YouTubeTranscriber onBack={() => setActiveApp(null)} />
             ) : activeTab === 'chat' ? (
               <ChatInterface />
-            ) : activeTab === 'documents' ? (
-              <DocumentProcessor />
             ) : activeTab === 'browser' ? (
               <DocumentBrowser />
             ) : (
-              <GoogleDriveTest />
+              <ChatInterface />
             )}
           </div>
         </div>

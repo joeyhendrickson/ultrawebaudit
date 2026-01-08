@@ -22,8 +22,8 @@ async function getRefreshToken() {
     const oauth2Client = getGoogleOAuthClient();
 
     const scopes = [
-      'https://www.googleapis.com/auth/drive.readonly',
-      'https://www.googleapis.com/auth/drive.metadata.readonly',
+      'https://www.googleapis.com/auth/drive.readonly', // Read all files (needed to list folder contents)
+      'https://www.googleapis.com/auth/drive.file', // Create/edit/delete files the app creates (for uploads)
     ];
 
     const authUrl = oauth2Client.generateAuthUrl({

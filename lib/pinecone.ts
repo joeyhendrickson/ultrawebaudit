@@ -8,12 +8,12 @@ export async function getPineconeClient(): Promise<Pinecone> {
   }
 
   const apiKey = process.env.PINECONE_API_KEY;
-  const environment = process.env.PINECONE_ENVIRONMENT;
 
-  if (!apiKey || !environment) {
-    throw new Error('Pinecone API key and environment must be set');
+  if (!apiKey) {
+    throw new Error('Pinecone API key must be set (PINECONE_API_KEY)');
   }
 
+  // Pinecone v2 (serverless) only needs the API key, environment is not required
   pineconeClient = new Pinecone({
     apiKey: apiKey,
   });
@@ -27,7 +27,7 @@ export async function queryPinecone(
   namespace?: string
 ) {
   const client = await getPineconeClient();
-  const indexName = process.env.PINECONE_INDEX_NAME || 'adacompliance-index';
+  const indexName = process.env.PINECONE_INDEX_NAME || 'ultra-index';
   const index = client.index(indexName);
 
   if (namespace) {
@@ -47,6 +47,86 @@ export async function queryPinecone(
   }
 }
 
+export async function queryPineconeByFileId(
+  fileId: string,
+  namespace?: string
+) {
+  const client = await getPineconeClient();
+  const indexName = process.env.PINECONE_INDEX_NAME || 'ultra-index';
+  const index = client.index(indexName);
+
+  // Use a dummy vector for the query (we're filtering by metadata)
+  // We need a vector of the right dimension (1536 for OpenAI embeddings)
+  const dummyVector = new Array(1536).fill(0);
+
+  try {
+    let queryResponse;
+    // Try with filter first
+    try {
+      if (namespace) {
+        queryResponse = await index.namespace(namespace).query({
+          vector: dummyVector,
+          topK: 10000,
+          includeMetadata: true,
+          filter: {
+            fileId: { $eq: fileId },
+          },
+        });
+      } else {
+        queryResponse = await index.query({
+          vector: dummyVector,
+          topK: 10000,
+          includeMetadata: true,
+          filter: {
+            fileId: { $eq: fileId },
+          },
+        });
+      }
+      return queryResponse.matches || [];
+    } catch (filterError) {
+      // If filter fails, query without filter and filter in code
+      console.warn('Filter query failed, falling back to code-based filtering:', filterError);
+      if (namespace) {
+        queryResponse = await index.namespace(namespace).query({
+          vector: dummyVector,
+          topK: 10000,
+          includeMetadata: true,
+        });
+      } else {
+        queryResponse = await index.query({
+          vector: dummyVector,
+          topK: 10000,
+          includeMetadata: true,
+        });
+      }
+      
+      // Filter matches by fileId in metadata
+      const filteredMatches = (queryResponse.matches || []).filter(match => {
+        const matchFileId = match.metadata?.fileId || match.metadata?.file_id;
+        return matchFileId === fileId;
+      });
+      
+      return filteredMatches;
+    }
+  } catch (error) {
+    console.error('Error querying Pinecone by fileId:', error);
+    // Final fallback: try with embedding query
+    try {
+      const { getEmbedding } = await import('./openai');
+      const queryEmbedding = await getEmbedding(fileId);
+      const matches = await queryPinecone(queryEmbedding, 10000, namespace);
+      // Filter by fileId
+      return matches.filter(match => {
+        const matchFileId = match.metadata?.fileId || match.metadata?.file_id;
+        return matchFileId === fileId;
+      });
+    } catch (fallbackError) {
+      console.error('Fallback query also failed:', fallbackError);
+      return [];
+    }
+  }
+}
+
 export async function upsertToPinecone(
   vectors: Array<{
     id: string;
@@ -56,7 +136,7 @@ export async function upsertToPinecone(
   namespace?: string
 ) {
   const client = await getPineconeClient();
-  const indexName = process.env.PINECONE_INDEX_NAME || 'adacompliance-index';
+  const indexName = process.env.PINECONE_INDEX_NAME || 'ultra-index';
   const index = client.index(indexName);
 
   console.log(`Upserting ${vectors.length} vector(s) to Pinecone index: ${indexName}`);

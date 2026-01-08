@@ -34,7 +34,10 @@ export default function ChatInterface() {
   const [showHistory, setShowHistory] = useState(false);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
+  const [playingMessageIndex, setPlayingMessageIndex] = useState<number | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const speechSynthesisRef = useRef<SpeechSynthesisUtterance | null>(null);
 
   // Load conversations from localStorage on mount
   useEffect(() => {
@@ -44,7 +47,7 @@ export default function ChatInterface() {
   const saveConversationToHistory = (conversationMessages: Message[]) => {
     if (conversationMessages.length === 0) return;
 
-    const conversationsKey = 'adacompliance_conversations';
+    const conversationsKey = 'ultra_conversations';
     const existingConversations: Conversation[] = JSON.parse(
       localStorage.getItem(conversationsKey) || '[]'
     );
@@ -84,7 +87,7 @@ export default function ChatInterface() {
   };
 
   const loadConversationsFromHistory = () => {
-    const conversationsKey = 'adacompliance_conversations';
+    const conversationsKey = 'ultra_conversations';
     const stored = localStorage.getItem(conversationsKey);
     if (stored) {
       const parsed: Conversation[] = JSON.parse(stored);
@@ -109,7 +112,7 @@ export default function ChatInterface() {
 
   const deleteConversation = (conversationId: string) => {
     const updated = conversations.filter(c => c.id !== conversationId);
-    localStorage.setItem('adacompliance_conversations', JSON.stringify(updated));
+    localStorage.setItem('ultra_conversations', JSON.stringify(updated));
     setConversations(updated);
     if (selectedConversation === conversationId) {
       startNewConversation();
@@ -184,6 +187,113 @@ export default function ChatInterface() {
     }
   };
 
+  const speakMessage = async (messageIndex: number, text: string) => {
+    // Stop any currently playing audio
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+    if (speechSynthesisRef.current) {
+      window.speechSynthesis.cancel();
+      speechSynthesisRef.current = null;
+    }
+
+    // If clicking the same message that's playing, stop it
+    if (playingMessageIndex === messageIndex) {
+      setPlayingMessageIndex(null);
+      return;
+    }
+
+    setPlayingMessageIndex(messageIndex);
+
+    try {
+      // Try OpenAI TTS first
+      const response = await fetch('/api/tts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text }),
+      });
+
+      if (response.ok) {
+        const audioBlob = await response.blob();
+        const audioUrl = URL.createObjectURL(audioBlob);
+        const audio = new Audio(audioUrl);
+        audioRef.current = audio;
+
+        audio.onended = () => {
+          setPlayingMessageIndex(null);
+          URL.revokeObjectURL(audioUrl);
+        };
+
+        audio.onerror = () => {
+          console.error('Audio playback error, falling back to browser TTS');
+          setPlayingMessageIndex(null);
+          URL.revokeObjectURL(audioUrl);
+          // Fall back to browser TTS
+          fallbackToBrowserTTS(text, messageIndex);
+        };
+
+        await audio.play();
+      } else {
+        // If OpenAI TTS fails, fall back to browser TTS
+        throw new Error('OpenAI TTS failed');
+      }
+    } catch (error) {
+      console.warn('OpenAI TTS failed, using browser TTS:', error);
+      fallbackToBrowserTTS(text, messageIndex);
+    }
+  };
+
+  const fallbackToBrowserTTS = (text: string, messageIndex: number) => {
+    // Stop any current speech
+    window.speechSynthesis.cancel();
+
+    if ('speechSynthesis' in window) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+      utterance.volume = 1.0;
+
+      utterance.onend = () => {
+        setPlayingMessageIndex(null);
+        speechSynthesisRef.current = null;
+      };
+
+      utterance.onerror = (event) => {
+        console.error('Browser TTS error:', event);
+        setPlayingMessageIndex(null);
+        speechSynthesisRef.current = null;
+      };
+
+      speechSynthesisRef.current = utterance;
+      window.speechSynthesis.speak(utterance);
+    } else {
+      console.error('Browser TTS not supported');
+      setPlayingMessageIndex(null);
+    }
+  };
+
+  const stopSpeaking = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+    if (speechSynthesisRef.current) {
+      window.speechSynthesis.cancel();
+      speechSynthesisRef.current = null;
+    }
+    setPlayingMessageIndex(null);
+  };
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      stopSpeaking();
+    };
+  }, []);
+
   const exportConversation = () => {
     if (messages.length === 0) return;
     
@@ -191,7 +301,7 @@ export default function ChatInterface() {
     const title = firstUserMessage?.content.substring(0, 50) || 'Conversation';
     const date = new Date().toLocaleString();
     
-    let content = `ADA Compliance Advisor - Conversation Export\n`;
+    let content = `Ultra Advisor - Conversation Export\n`;
     content += `Generated: ${date}\n`;
     content += `Title: ${title}\n\n`;
     content += `${'='.repeat(60)}\n\n`;
@@ -218,7 +328,7 @@ export default function ChatInterface() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `ada-compliance-chat-${Date.now()}.txt`;
+    a.download = `ultra-chat-${Date.now()}.txt`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -349,9 +459,9 @@ export default function ChatInterface() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
               </svg>
             </div>
-            <p className="text-xl font-semibold mb-2 text-gray-800">Welcome to ADA Compliance Advisor</p>
-            <p className="text-gray-600 mb-1">Ask me anything about ADA compliance, project management, or monitoring.</p>
-            <p className="text-sm text-gray-500 mt-2">I&apos;ll search the knowledge base to provide accurate answers.</p>
+            <p className="text-xl font-semibold mb-2 text-gray-800">Welcome to ULTRA Advisor</p>
+            <p className="text-gray-600 mb-1">Ask me anything about Blackboard Ultra, course setup, management, strategic use of Ultra, or content questions.</p>
+            <p className="text-sm text-gray-500 mt-2">I&apos;ll reference a vast knowledge base about Ultra to provide my responses.</p>
           </div>
         )}
         {messages.map((message, index) => (
@@ -373,7 +483,30 @@ export default function ChatInterface() {
                   : 'bg-white text-black border-2 border-black rounded-tl-sm'
               }`}
             >
-              <p className="whitespace-pre-wrap leading-relaxed">{message.content}</p>
+              <div className="flex items-start justify-between gap-2">
+                <p className="whitespace-pre-wrap leading-relaxed flex-1">{message.content}</p>
+                {message.role === 'assistant' && (
+                  <button
+                    onClick={() => speakMessage(index, message.content)}
+                    className={`flex-shrink-0 p-2 rounded-lg transition-colors ${
+                      playingMessageIndex === index
+                        ? 'bg-blue-100 text-blue-600'
+                        : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                    }`}
+                    title={playingMessageIndex === index ? 'Stop speaking' : 'Speak message'}
+                  >
+                    {playingMessageIndex === index ? (
+                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                    ) : (
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                      </svg>
+                    )}
+                  </button>
+                )}
+              </div>
               
               {message.role === 'assistant' && (
                 <>
@@ -481,7 +614,7 @@ export default function ChatInterface() {
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask a question about ADA compliance..."
+            placeholder="Ask a question about Blackboard Ultra..."
                     className="w-full px-5 py-4 pr-12 border-2 border-gray-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-black focus:border-black transition-all duration-200 bg-white shadow-sm disabled:bg-gray-50 disabled:cursor-not-allowed"
             disabled={isLoading}
           />
@@ -494,12 +627,9 @@ export default function ChatInterface() {
         <button
           type="submit"
           disabled={isLoading || !input.trim()}
-                  className="px-8 py-4 bg-black text-white rounded-xl font-semibold shadow-lg hover:shadow-xl hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 transition-all duration-200 flex items-center gap-2"
+                  className="px-8 py-4 bg-black text-white rounded-xl font-semibold shadow-lg hover:shadow-xl hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 transition-all duration-200"
         >
-          <span>Send</span>
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-          </svg>
+          Send
         </button>
       </form>
     </div>

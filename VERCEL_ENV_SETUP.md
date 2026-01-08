@@ -8,7 +8,7 @@ This guide will help you add all the environment variables from your `.env.local
 
 1. **Go to your Vercel project:**
    - Visit: https://vercel.com/dashboard
-   - Find and click on your project: `adacompliance` (or `joey-hendricksons-projects/adacompliance`)
+   - Find and click on your project: `ultrawebaudit` (or your project name)
 
 2. **Navigate to Settings:**
    - Click on the **Settings** tab at the top of your project page
@@ -39,12 +39,12 @@ This guide will help you add all the environment variables from your `.env.local
 
 6. **Important Notes:**
    - **GOOGLE_REDIRECT_URI**: Make sure this matches your Vercel production URL:
-     - If your Vercel URL is `https://adacompliance-xyz.vercel.app`, use:
-       `https://adacompliance-xyz.vercel.app/api/auth/google/callback`
+     - If your Vercel URL is `https://ultrawebaudit-xyz.vercel.app`, use:
+       `https://ultrawebaudit-xyz.vercel.app/api/auth/google/callback`
      - OR use your custom domain if you have one set up
    
    - **NEXT_PUBLIC_APP_URL**: Should be your production Vercel URL:
-     - Example: `https://adacompliance-xyz.vercel.app`
+     - Example: `https://ultrawebaudit-xyz.vercel.app`
      - OR your custom domain
 
 7. **Save and Redeploy:**
@@ -79,7 +79,7 @@ vercel env pull .env.local
 - **OPENAI_API_KEY**: Your OpenAI API key for AI-powered features
 - **PINECONE_API_KEY**: Your Pinecone API key for vector database
 - **PINECONE_ENVIRONMENT**: Your Pinecone environment/region
-- **PINECONE_INDEX_NAME**: Name of your Pinecone index (default: `adacompliance-index`)
+- **PINECONE_INDEX_NAME**: Name of your Pinecone index (default: `ultra-index`)
 - **GOOGLE_CLIENT_ID**: Google OAuth client ID
 - **GOOGLE_CLIENT_SECRET**: Google OAuth client secret
 - **GOOGLE_REDIRECT_URI**: OAuth callback URL (must match Vercel URL)

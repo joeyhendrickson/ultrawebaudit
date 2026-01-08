@@ -27,11 +27,9 @@ export default function AppMenu({ onSelectApp }: AppMenuProps) {
   }, [isOpen]);
 
   const apps = [
-    { id: 'pdf-link-processor', name: 'PDF Link Processor', icon: '🔗' },
     { id: 'website-scanner', name: 'Website Scanner', icon: '🌐' },
     { id: 'analytics', name: 'Analytics', icon: '📊' },
-    { id: 'triage', name: 'Triage', icon: '🔍' },
-    { id: 'pdf-processor', name: 'PDF Processor', icon: '📄' },
+    { id: 'youtube-transcriber', name: 'YouTube Transcriber', icon: '🎥' },
   ];
 
   return (

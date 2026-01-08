@@ -16,8 +16,15 @@ export async function POST(request: NextRequest) {
     // Get embedding for the user's message
     const queryEmbedding = await getEmbedding(message);
 
-    // Query Pinecone for relevant context
-    const matches = await queryPinecone(queryEmbedding, 5);
+    // Query Pinecone for relevant context (with error handling)
+    let matches: any[] = [];
+    try {
+      matches = await queryPinecone(queryEmbedding, 5);
+    } catch (pineconeError) {
+      console.warn('Pinecone query failed, continuing without context:', pineconeError);
+      // Continue without context if Pinecone fails
+      matches = [];
+    }
 
     // Calculate a simple confidence score based on the highest match score
     const confidenceScore = matches.length > 0 ? matches[0].score || 0 : 0;
@@ -54,8 +61,25 @@ export async function POST(request: NextRequest) {
     // Get response from OpenAI with context
     let response = await chatCompletion(messages, context);
 
-    // Remove asterisks from response
-    response = response.replace(/\*\*/g, '');
+    // Remove markdown formatting to make it more conversational and human
+    // Remove headers (###, ##, #)
+    response = response.replace(/^#{1,6}\s+/gm, '');
+    // Remove bold/italic markdown (**text**, *text*, __text__, _text_)
+    response = response.replace(/\*\*([^*]+)\*\*/g, '$1');
+    response = response.replace(/\*([^*]+)\*/g, '$1');
+    response = response.replace(/__([^_]+)__/g, '$1');
+    response = response.replace(/_([^_]+)_/g, '$1');
+    // Remove code blocks (```code``` and `code`)
+    response = response.replace(/```[\s\S]*?```/g, '');
+    response = response.replace(/`([^`]+)`/g, '$1');
+    // Remove links ([text](url))
+    response = response.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
+    // Remove list markers (-, *, +, 1.)
+    response = response.replace(/^[\s]*[-*+]\s+/gm, '');
+    response = response.replace(/^\d+\.\s+/gm, '');
+    // Clean up extra whitespace
+    response = response.replace(/\n{3,}/g, '\n\n');
+    response = response.trim();
 
     return NextResponse.json({
       response,
@@ -65,8 +89,29 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('Chat API error:', error);
+    
+    // Provide more detailed error information
+    let errorMessage = 'Failed to process chat message';
+    if (error instanceof Error) {
+      errorMessage = error.message;
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack,
+        name: error.name,
+      });
+    }
+    
+    // Check for common issues
+    if (errorMessage.includes('API key') || errorMessage.includes('must be set')) {
+      errorMessage = 'Configuration error: Missing API keys. Please check your environment variables (OPENAI_API_KEY is required, PINECONE_API_KEY is optional but recommended).';
+    } else if (errorMessage.includes('Pinecone')) {
+      errorMessage = `Pinecone error: ${errorMessage}`;
+    } else if (errorMessage.includes('OpenAI')) {
+      errorMessage = `OpenAI error: ${errorMessage}`;
+    }
+    
     return NextResponse.json(
-      { error: 'Failed to process chat message' },
+      { error: errorMessage },
       { status: 500 }
     );
   }

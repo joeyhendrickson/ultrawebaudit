@@ -16,6 +16,46 @@ interface ScannedURL {
       severity: 'low' | 'medium' | 'high';
       tag?: string;
       location?: string;
+      outdatedText?: string;
+      currentText?: string;
+      suggestedReplacement?: string;
+      reasoning?: string;
+      priority?: 'immediate' | 'high' | 'medium' | 'low';
+    }>;
+    outdatedTermsFound?: string[];
+    updatePriority?: 'low' | 'medium' | 'high';
+    currentRelevance?: {
+      isRelevant: boolean;
+      reason: string;
+      accurateContent?: string[];
+      needsUpdating?: string[];
+    };
+    futureRelevance?: {
+      isRelevant: boolean;
+      reason?: string;
+      reasoning?: string;
+      shouldUpdate?: boolean;
+      shouldArchive?: boolean;
+    };
+    messagingStrategy?: {
+      currentState?: string;
+      transitionMessage?: string;
+      tone?: string;
+      keyMessages?: string[];
+    };
+    instructorRecommendations?: {
+      addDevShellLink?: boolean;
+      devShellLinkText?: string;
+      workshopMention?: string;
+      ultraFeaturesToHighlight?: string[];
+      transitionGuidance?: string;
+    };
+    specificChanges?: Array<{
+      action: 'replace' | 'add' | 'remove' | 'update';
+      currentText?: string;
+      newText?: string;
+      location?: string;
+      reason?: string;
     }>;
     documentStructure?: {
       semanticElements: {
@@ -155,11 +195,15 @@ export default function WebsiteScanner({ onBack }: { onBack?: () => void }) {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Failed to analyze URLs' }));
-        throw new Error(errorData.error || 'Failed to analyze URLs');
+        const errorData = await response.json().catch(() => ({ 
+          error: `HTTP ${response.status}: ${response.statusText}` 
+        }));
+        console.error('Analysis API error:', errorData);
+        throw new Error(errorData.error || `HTTP ${response.status}: Failed to analyze URLs`);
       }
 
       const data = await response.json();
+      console.log('Analysis response:', data);
 
       if (data.success && data.results) {
         setScannedURLs(
@@ -174,6 +218,14 @@ export default function WebsiteScanner({ onBack }: { onBack?: () => void }) {
                   summary: result.summary || 'No issues found',
                   riskLevel: result.riskLevel || 'low',
                   issues: result.issues || [],
+                  outdatedTermsFound: result.outdatedTermsFound || [],
+                  updatePriority: result.updatePriority || result.riskLevel || 'low',
+                  currentRelevance: result.currentRelevance,
+                  futureRelevance: result.futureRelevance,
+                  messagingStrategy: result.messagingStrategy,
+                  instructorRecommendations: result.instructorRecommendations,
+                  specificChanges: result.specificChanges || [],
+                  documentStructure: result.documentStructure, // Optional, for backward compatibility
                 },
               };
             }
@@ -185,7 +237,10 @@ export default function WebsiteScanner({ onBack }: { onBack?: () => void }) {
       }
     } catch (error) {
       console.error('Analysis error:', error);
-      setError(error instanceof Error ? error.message : 'Failed to analyze URLs');
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : 'Failed to analyze URLs';
+      setError(`Analysis failed: ${errorMessage}. Check the browser console for details.`);
     } finally {
       setIsAnalyzing(false);
     }
@@ -321,13 +376,13 @@ export default function WebsiteScanner({ onBack }: { onBack?: () => void }) {
               </svg>
             </div>
             <h2 className="text-3xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
-              Website Compliance Scanner
+              Website Scanner
             </h2>
           </div>
         </div>
         <p className="text-gray-600 text-lg leading-relaxed">
-          Scan websites for ADA compliance issues. The scanner will analyze the top-level URL and up to {MAX_URLS} URLs 
-          across {MAX_DEPTH} layers deep, then provide risk assessments and rewrite content for compliance.
+          Scan websites for outdated Blackboard Learn messaging. The scanner will analyze the top-level URL and up to {MAX_URLS} URLs 
+          across {MAX_DEPTH} layers deep, then identify outdated messaging and generate updated content for Blackboard Ultra.
         </p>
       </div>
 
@@ -414,7 +469,7 @@ export default function WebsiteScanner({ onBack }: { onBack?: () => void }) {
               disabled={isAnalyzing || scannedURLs.length === 0}
               className="px-6 py-2 bg-black text-white rounded-lg font-semibold hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {isAnalyzing ? 'Analyzing...' : 'Analyze for Compliance'}
+              {isAnalyzing ? 'Analyzing...' : 'Analyze for Outdated Messaging'}
             </button>
             {scannedURLs.every((s) => s.analysis) && (
               <button
@@ -423,7 +478,7 @@ export default function WebsiteScanner({ onBack }: { onBack?: () => void }) {
                 disabled={isRewriting || scannedURLs.some((s) => !s.analysis)}
                 className="px-6 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                {isRewriting ? 'Rewriting...' : 'Rewrite Content'}
+                {isRewriting ? 'Rewriting...' : 'Update to Ultra Messaging'}
               </button>
             )}
           </div>
@@ -499,10 +554,27 @@ export default function WebsiteScanner({ onBack }: { onBack?: () => void }) {
                             </ul>
                           </div>
                         )}
+                        {scanned.analysis.outdatedTermsFound && scanned.analysis.outdatedTermsFound.length > 0 && (
+                          <div>
+                            <p className="text-sm font-semibold text-gray-700 mb-2">
+                              Outdated Terms Found:
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                              {scanned.analysis.outdatedTermsFound.map((term, termIndex) => (
+                                <span
+                                  key={termIndex}
+                                  className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-xs font-semibold"
+                                >
+                                  {term}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                         {scanned.analysis.issues.length > 0 && (
                           <div>
                             <p className="text-sm font-semibold text-gray-700 mb-2">
-                              Document & Tagging Level Issues:
+                              Messaging Issues to Update:
                             </p>
                             <div className="space-y-2">
                               {scanned.analysis.issues.map((issue, issueIndex) => (
@@ -527,8 +599,243 @@ export default function WebsiteScanner({ onBack }: { onBack?: () => void }) {
                                     )}
                                   </div>
                                   <p className="text-xs text-gray-600 mb-1">{issue.description}</p>
-                                  {issue.location && (
-                                    <p className="text-xs text-gray-500 italic">Location: {issue.location}</p>
+                                  {issue.reasoning && (
+                                    <div className="mt-2 p-2 bg-blue-50 rounded mb-1">
+                                      <p className="text-xs font-semibold text-gray-700">Why:</p>
+                                      <p className="text-xs text-blue-700">{issue.reasoning}</p>
+                                    </div>
+                                  )}
+                                  {(issue.outdatedText || issue.currentText) && (
+                                    <div className="mt-2 p-2 bg-gray-100 rounded mb-1">
+                                      <p className="text-xs font-semibold text-gray-700">Current:</p>
+                                      <p className="text-xs text-red-600 line-through">{issue.currentText || issue.outdatedText}</p>
+                                    </div>
+                                  )}
+                                  {issue.suggestedReplacement && (
+                                    <div className="mt-2 p-2 bg-green-50 rounded mb-1">
+                                      <p className="text-xs font-semibold text-gray-700">Suggested:</p>
+                                      <p className="text-xs text-green-700">{issue.suggestedReplacement}</p>
+                                    </div>
+                                  )}
+                                  <div className="flex items-center gap-2 mt-2">
+                                    {issue.location && (
+                                      <p className="text-xs text-gray-500 italic">Location: {issue.location}</p>
+                                    )}
+                                    {issue.priority && (
+                                      <span className={`px-2 py-0.5 rounded text-xs font-semibold ${
+                                        issue.priority === 'immediate' ? 'bg-red-100 text-red-800' :
+                                        issue.priority === 'high' ? 'bg-orange-100 text-orange-800' :
+                                        issue.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                                        'bg-gray-100 text-gray-800'
+                                      }`}>
+                                        {issue.priority.toUpperCase()} PRIORITY
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {scanned.analysis.updatePriority && (
+                          <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                            <p className="text-sm font-semibold text-gray-700 mb-1">
+                              Update Priority:
+                            </p>
+                            <span
+                              className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                                scanned.analysis.updatePriority === 'high'
+                                  ? 'bg-red-100 text-red-800'
+                                  : scanned.analysis.updatePriority === 'medium'
+                                  ? 'bg-yellow-100 text-yellow-800'
+                                  : 'bg-green-100 text-green-800'
+                              }`}
+                            >
+                              {scanned.analysis.updatePriority.toUpperCase()} PRIORITY
+                            </span>
+                          </div>
+                        )}
+                        {scanned.analysis.currentRelevance && (
+                          <div className="mt-3 p-4 bg-green-50 border border-green-200 rounded-lg">
+                            <p className="text-sm font-semibold text-gray-700 mb-2">
+                              Current Relevance (Blackboard Learn):
+                            </p>
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                                scanned.analysis.currentRelevance.isRelevant
+                                  ? 'bg-green-100 text-green-800'
+                                  : 'bg-gray-100 text-gray-800'
+                              }`}>
+                                {scanned.analysis.currentRelevance.isRelevant ? 'RELEVANT' : 'NOT RELEVANT'}
+                              </span>
+                            </div>
+                            <p className="text-xs text-gray-700 mb-2">{scanned.analysis.currentRelevance.reason}</p>
+                            {scanned.analysis.currentRelevance.accurateContent && scanned.analysis.currentRelevance.accurateContent.length > 0 && (
+                              <div className="mt-2">
+                                <p className="text-xs font-semibold text-gray-600 mb-1">Still Accurate:</p>
+                                <ul className="list-disc list-inside text-xs text-gray-600">
+                                  {scanned.analysis.currentRelevance.accurateContent.map((item, idx) => (
+                                    <li key={idx}>{item}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                            {scanned.analysis.currentRelevance.needsUpdating && scanned.analysis.currentRelevance.needsUpdating.length > 0 && (
+                              <div className="mt-2">
+                                <p className="text-xs font-semibold text-gray-600 mb-1">Needs Updating:</p>
+                                <ul className="list-disc list-inside text-xs text-gray-600">
+                                  {scanned.analysis.currentRelevance.needsUpdating.map((item, idx) => (
+                                    <li key={idx}>{item}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        {scanned.analysis.futureRelevance && (
+                          <div className="mt-3 p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                            <p className="text-sm font-semibold text-gray-700 mb-2">
+                              Future Relevance (Blackboard Ultra):
+                            </p>
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                                scanned.analysis.futureRelevance.isRelevant
+                                  ? 'bg-purple-100 text-purple-800'
+                                  : 'bg-gray-100 text-gray-800'
+                              }`}>
+                                {scanned.analysis.futureRelevance.isRelevant ? 'RELEVANT' : 'NOT RELEVANT'}
+                              </span>
+                              {scanned.analysis.futureRelevance.shouldUpdate && (
+                                <span className="px-2 py-1 rounded text-xs font-semibold bg-blue-100 text-blue-800">
+                                  SHOULD UPDATE
+                                </span>
+                              )}
+                              {scanned.analysis.futureRelevance.shouldArchive && (
+                                <span className="px-2 py-1 rounded text-xs font-semibold bg-orange-100 text-orange-800">
+                                  SHOULD ARCHIVE
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-gray-700">{scanned.analysis.futureRelevance.reasoning || scanned.analysis.futureRelevance.reason}</p>
+                          </div>
+                        )}
+                        {scanned.analysis.messagingStrategy && (
+                          <div className="mt-3 p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
+                            <p className="text-sm font-semibold text-gray-700 mb-2">
+                              Messaging Strategy:
+                            </p>
+                            {scanned.analysis.messagingStrategy.currentState && (
+                              <div className="mb-3">
+                                <p className="text-xs font-semibold text-gray-600 mb-1">Current State (Learn):</p>
+                                <p className="text-xs text-gray-700">{scanned.analysis.messagingStrategy.currentState}</p>
+                              </div>
+                            )}
+                            {scanned.analysis.messagingStrategy.transitionMessage && (
+                              <div className="mb-3">
+                                <p className="text-xs font-semibold text-gray-600 mb-1">Transition Message (Ultra):</p>
+                                <p className="text-xs text-gray-700">{scanned.analysis.messagingStrategy.transitionMessage}</p>
+                              </div>
+                            )}
+                            {scanned.analysis.messagingStrategy.tone && (
+                              <div className="mb-3">
+                                <p className="text-xs font-semibold text-gray-600 mb-1">Recommended Tone:</p>
+                                <p className="text-xs text-gray-700">{scanned.analysis.messagingStrategy.tone}</p>
+                              </div>
+                            )}
+                            {scanned.analysis.messagingStrategy.keyMessages && scanned.analysis.messagingStrategy.keyMessages.length > 0 && (
+                              <div>
+                                <p className="text-xs font-semibold text-gray-600 mb-1">Key Messages:</p>
+                                <ul className="list-disc list-inside text-xs text-gray-700">
+                                  {scanned.analysis.messagingStrategy.keyMessages.map((msg, idx) => (
+                                    <li key={idx}>{msg}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        {scanned.analysis.instructorRecommendations && (
+                          <div className="mt-3 p-4 bg-yellow-50 border-2 border-yellow-300 rounded-lg">
+                            <p className="text-sm font-semibold text-gray-700 mb-2">
+                              📚 Instructor Recommendations:
+                            </p>
+                            {scanned.analysis.instructorRecommendations.addDevShellLink && (
+                              <div className="mb-3 p-2 bg-white rounded border border-yellow-200">
+                                <p className="text-xs font-semibold text-gray-700 mb-1">Dev Shell Link:</p>
+                                <a 
+                                  href="https://www.cs-cc.edu/ultra" 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-blue-600 hover:text-blue-800 underline"
+                                >
+                                  www.cs-cc.edu/ultra
+                                </a>
+                                {scanned.analysis.instructorRecommendations.devShellLinkText && (
+                                  <p className="text-xs text-gray-600 mt-1 italic">
+                                    Suggested text: "{scanned.analysis.instructorRecommendations.devShellLinkText}"
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                            {scanned.analysis.instructorRecommendations.workshopMention && (
+                              <div className="mb-3">
+                                <p className="text-xs font-semibold text-gray-600 mb-1">Workshop Mention:</p>
+                                <p className="text-xs text-gray-700">{scanned.analysis.instructorRecommendations.workshopMention}</p>
+                              </div>
+                            )}
+                            {scanned.analysis.instructorRecommendations.ultraFeaturesToHighlight && scanned.analysis.instructorRecommendations.ultraFeaturesToHighlight.length > 0 && (
+                              <div className="mb-3">
+                                <p className="text-xs font-semibold text-gray-600 mb-1">Ultra Features to Highlight:</p>
+                                <ul className="list-disc list-inside text-xs text-gray-700">
+                                  {scanned.analysis.instructorRecommendations.ultraFeaturesToHighlight.map((feature, idx) => (
+                                    <li key={idx}>{feature}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                            {scanned.analysis.instructorRecommendations.transitionGuidance && (
+                              <div>
+                                <p className="text-xs font-semibold text-gray-600 mb-1">Transition Guidance:</p>
+                                <p className="text-xs text-gray-700">{scanned.analysis.instructorRecommendations.transitionGuidance}</p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        {scanned.analysis.specificChanges && scanned.analysis.specificChanges.length > 0 && (
+                          <div className="mt-3 p-4 bg-gray-50 border-2 border-gray-300 rounded-lg">
+                            <p className="text-sm font-semibold text-gray-700 mb-2">
+                              📝 Specific Changes Required:
+                            </p>
+                            <div className="space-y-3">
+                              {scanned.analysis.specificChanges.map((change, idx) => (
+                                <div key={idx} className="p-3 bg-white rounded border border-gray-200">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <span className={`px-2 py-1 rounded text-xs font-semibold ${
+                                      change.action === 'replace' ? 'bg-orange-100 text-orange-800' :
+                                      change.action === 'add' ? 'bg-green-100 text-green-800' :
+                                      change.action === 'remove' ? 'bg-red-100 text-red-800' :
+                                      'bg-blue-100 text-blue-800'
+                                    }`}>
+                                      {change.action.toUpperCase()}
+                                    </span>
+                                    {change.location && (
+                                      <span className="text-xs text-gray-500">Location: {change.location}</span>
+                                    )}
+                                  </div>
+                                  {change.currentText && (
+                                    <div className="mb-2 p-2 bg-gray-100 rounded">
+                                      <p className="text-xs font-semibold text-gray-600 mb-1">Current:</p>
+                                      <p className="text-xs text-gray-700 line-through">{change.currentText}</p>
+                                    </div>
+                                  )}
+                                  {change.newText && (
+                                    <div className="mb-2 p-2 bg-green-50 rounded">
+                                      <p className="text-xs font-semibold text-gray-600 mb-1">New:</p>
+                                      <p className="text-xs text-green-700">{change.newText}</p>
+                                    </div>
+                                  )}
+                                  {change.reason && (
+                                    <p className="text-xs text-gray-600 italic">Why: {change.reason}</p>
                                   )}
                                 </div>
                               ))}
@@ -630,14 +937,14 @@ export default function WebsiteScanner({ onBack }: { onBack?: () => void }) {
                     {scanned.rewritten && (
                       <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
                         <p className="text-sm font-semibold text-green-800 mb-2">
-                          ✓ Content has been rewritten for compliance
+                          ✓ Content has been updated with Blackboard Ultra messaging
                         </p>
                         <button
                           type="button"
                           onClick={() => downloadRewritten(scanned)}
                           className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-semibold hover:bg-green-700 transition-colors"
                         >
-                          Download Rewritten HTML
+                          Download Updated HTML
                         </button>
                       </div>
                     )}

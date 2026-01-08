@@ -1,6 +1,6 @@
-# ADA Compliance Chat Interface
+# Ultra Advisor
 
-An intelligent FAQ and advisory application for ADA Compliance transformation, powered by OpenAI GPT-4o-mini, Pinecone vector database, and Google Drive integration.
+An intelligent FAQ and advisory application for Blackboard Ultra content management, powered by OpenAI GPT-4o-mini, Pinecone vector database, and Google Drive integration.
 
 ## Features
 

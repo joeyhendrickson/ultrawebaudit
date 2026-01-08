@@ -70,19 +70,48 @@ export async function POST(request: NextRequest) {
 
         // Chunk the text
         let chunks: string[] = [];
+        // Maximum chunk size: 2000 characters (≈ 500 tokens, well under 8192 token limit)
+        const MAX_CHUNK_SIZE = 2000;
+        const OVERLAP = 200;
+        
         const paragraphChunks = text.split(/\n\n+/).filter((chunk) => chunk.trim().length > 20);
         
         if (paragraphChunks.length > 0) {
-          chunks = paragraphChunks;
+          // Split large paragraphs into smaller chunks
+          for (const para of paragraphChunks) {
+            if (para.length <= MAX_CHUNK_SIZE) {
+              chunks.push(para);
+            } else {
+              // Split large paragraph into smaller chunks
+              for (let i = 0; i < para.length; i += MAX_CHUNK_SIZE - OVERLAP) {
+                const chunk = para.slice(i, i + MAX_CHUNK_SIZE).trim();
+                if (chunk.length > 20) {
+                  chunks.push(chunk);
+                }
+              }
+            }
+          }
         } else {
           const sentenceChunks = text.split(/[.!?]+\s+/).filter((chunk) => chunk.trim().length > 20);
           if (sentenceChunks.length > 0) {
-            chunks = sentenceChunks;
+            // Split large sentences into smaller chunks
+            for (const sent of sentenceChunks) {
+              if (sent.length <= MAX_CHUNK_SIZE) {
+                chunks.push(sent);
+              } else {
+                // Split large sentence into smaller chunks
+                for (let i = 0; i < sent.length; i += MAX_CHUNK_SIZE - OVERLAP) {
+                  const chunk = sent.slice(i, i + MAX_CHUNK_SIZE).trim();
+                  if (chunk.length > 20) {
+                    chunks.push(chunk);
+                  }
+                }
+              }
+            }
           } else {
             // Fixed-size fallback
-            const chunkSize = 500;
-            for (let i = 0; i < text.length; i += chunkSize) {
-              const chunk = text.substring(i, i + chunkSize).trim();
+            for (let i = 0; i < text.length; i += MAX_CHUNK_SIZE - OVERLAP) {
+              const chunk = text.substring(i, i + MAX_CHUNK_SIZE).trim();
               if (chunk.length > 20) {
                 chunks.push(chunk);
               }

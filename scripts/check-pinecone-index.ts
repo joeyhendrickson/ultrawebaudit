@@ -8,7 +8,7 @@ config({ path: resolve(process.cwd(), '.env.local') });
 async function checkIndex() {
   try {
     const apiKey = process.env.PINECONE_API_KEY;
-    const indexName = process.env.PINECONE_INDEX_NAME || 'adacompliance-index';
+    const indexName = process.env.PINECONE_INDEX_NAME || 'ultra-index';
 
     if (!apiKey) {
       console.error('❌ PINECONE_API_KEY is not set in .env.local');
