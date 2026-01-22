@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 3003",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -11,7 +11,8 @@
     "get-token": "tsx scripts/get-refresh-token.ts",
     "authorize": "tsx scripts/authorize.ts",
     "create-index": "tsx scripts/create-pinecone-index.ts",
-    "check-index": "tsx scripts/check-pinecone-index.ts"
+    "check-index": "tsx scripts/check-pinecone-index.ts",
+    "test-drive": "tsx scripts/test-google-drive-access.ts"
   },
   "dependencies": {
     "@pinecone-database/pinecone": "^2.0.0",

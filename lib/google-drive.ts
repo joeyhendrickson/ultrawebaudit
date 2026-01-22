@@ -37,9 +37,31 @@ export async function getGoogleDriveClient() {
   try {
     const { credentials } = await auth.refreshAccessToken();
     auth.setCredentials(credentials);
+    
+    // Check if Google provided a new refresh token
+    // This can happen when the token is rotated or re-issued
+    if (credentials.refresh_token && credentials.refresh_token !== process.env.GOOGLE_REFRESH_TOKEN) {
+      console.warn('⚠️  Google provided a NEW refresh token. Update your GOOGLE_REFRESH_TOKEN in .env.local:');
+      console.warn(`   New token: ${credentials.refresh_token}`);
+      console.warn('   This helps prevent token expiration. Update your environment variables.');
+    }
   } catch (error) {
     console.error('Error refreshing access token:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    
+    // Provide helpful error messages
+    if (errorMessage.includes('invalid_grant')) {
+      throw new Error(
+        `Refresh token expired or revoked. This usually happens if:\n` +
+        `- Your app is in "Testing" mode (tokens expire after 7 days)\n` +
+        `- Token hasn't been used for 6 months\n` +
+        `- User revoked access\n\n` +
+        `Solution: Get a new refresh token by visiting:\n` +
+        `http://localhost:3003/api/auth/google\n\n` +
+        `See PREVENT_TOKEN_EXPIRATION.md for more details.`
+      );
+    }
+    
     throw new Error(`Failed to refresh access token: ${errorMessage}. Make sure your refresh token is valid.`);
   }
 

@@ -57,7 +57,7 @@ If this is your first time creating OAuth credentials, you'll need to configure 
 3. Select **"Web application"** as the application type
 4. Give it a name (e.g., "ADA Compliance Web App")
 5. Under **"Authorized redirect URIs"**, click **"+ ADD URI"** and add:
-   - For local development: `http://localhost:3000/api/auth/google/callback`
+   - For local development: `http://localhost:3003/api/auth/google/callback`
    - For production (Vercel): `https://your-app-name.vercel.app/api/auth/google/callback`
 6. Click **"Create"**
 
@@ -76,7 +76,7 @@ After creating the OAuth client, you'll see a popup with:
    ```
    GOOGLE_CLIENT_ID=your_client_id_here
    GOOGLE_CLIENT_SECRET=your_client_secret_here
-   GOOGLE_REDIRECT_URI=http://localhost:3000/api/auth/google/callback
+   GOOGLE_REDIRECT_URI=http://localhost:3003/api/auth/google/callback
    ```
 
 ### Step 8: Get Your Refresh Token
@@ -85,7 +85,7 @@ To get the refresh token, you need to authorize the application:
 
 1. **Option A: Using the API endpoint** (Recommended)
    - Start your development server: `npm run dev`
-   - Visit: `http://localhost:3000/api/auth/google`
+   - Visit: `http://localhost:3003/api/auth/google`
    - This will return a JSON with an `authUrl`
    - Copy the `authUrl` and open it in your browser
    - Sign in and authorize the application

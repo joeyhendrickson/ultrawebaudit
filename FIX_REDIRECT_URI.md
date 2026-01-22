@@ -15,7 +15,7 @@ This means the redirect URI in your Google Cloud Console doesn't match what your
 
 Your application expects this redirect URI:
 ```
-http://localhost:3000/api/auth/google/callback
+http://localhost:3003/api/auth/google/callback
 ```
 
 **Important**: Make sure this EXACT URI is in your Google Cloud Console.
@@ -31,7 +31,7 @@ http://localhost:3000/api/auth/google/callback
 7. **Click "+ ADD URI"**
 8. **Add this EXACT URI** (copy and paste to avoid typos):
    ```
-   http://localhost:3000/api/auth/google/callback
+   http://localhost:3003/api/auth/google/callback
    ```
 9. **Click "SAVE"** at the bottom of the page
 
@@ -40,7 +40,7 @@ http://localhost:3000/api/auth/google/callback
 Make sure your `.env.local` file has the matching redirect URI:
 
 ```env
-GOOGLE_REDIRECT_URI=http://localhost:3000/api/auth/google/callback
+GOOGLE_REDIRECT_URI=http://localhost:3003/api/auth/google/callback
 ```
 
 **Important Notes:**
@@ -58,12 +58,12 @@ After making changes:
 
 ## Common Mistakes to Avoid
 
-❌ **Wrong**: `https://localhost:3000/api/auth/google/callback` (should be http)
-❌ **Wrong**: `http://127.0.0.1:3000/api/auth/google/callback` (should be localhost)
-❌ **Wrong**: `http://localhost:3000/api/auth/google/callback/` (no trailing slash)
-❌ **Wrong**: `http://localhost:3000/` (missing the callback path)
+❌ **Wrong**: `https://localhost:3003/api/auth/google/callback` (should be http)
+❌ **Wrong**: `http://127.0.0.1:3003/api/auth/google/callback` (should be localhost)
+❌ **Wrong**: `http://localhost:3003/api/auth/google/callback/` (no trailing slash)
+❌ **Wrong**: `http://localhost:3003/` (missing the callback path)
 
-✅ **Correct**: `http://localhost:3000/api/auth/google/callback`
+✅ **Correct**: `http://localhost:3003/api/auth/google/callback`
 
 ## For Production (Vercel)
 
@@ -87,7 +87,7 @@ In Google Cloud Console, your "Authorized redirect URIs" section should look lik
 ┌─────────────────────────────────────────────────────────────┐
 │ Authorized redirect URIs                                    │
 ├─────────────────────────────────────────────────────────────┤
-│ http://localhost:3000/api/auth/google/callback             │
+│ http://localhost:3003/api/auth/google/callback             │
 │                                                             │
 │ [+ ADD URI]                                                 │
 └─────────────────────────────────────────────────────────────┘
@@ -120,7 +120,7 @@ Or check your `.env.local` file directly.
 ## Testing the Fix
 
 1. Make sure your server is running: `npm run dev`
-2. Visit: `http://localhost:3000/api/auth/google`
+2. Visit: `http://localhost:3003/api/auth/google`
 3. Copy the `authUrl` from the response
 4. Open it in your browser
 5. You should now be able to authorize without the redirect_uri_mismatch error

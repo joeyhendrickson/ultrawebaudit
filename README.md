@@ -29,7 +29,7 @@ cp .env.local.example .env.local
 npm run dev
 ```
 
-5. Open [http://localhost:3000](http://localhost:3000) in your browser
+5. Open [http://localhost:3003](http://localhost:3003) in your browser
 
 ## Environment Variables
 

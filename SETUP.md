@@ -24,7 +24,7 @@
    - Create a new project or select existing one
    - Enable Google Drive API
    - Create OAuth 2.0 credentials (Web application)
-   - Add `http://localhost:3000/api/auth/google/callback` as authorized redirect URI
+   - Add `http://localhost:3003/api/auth/google/callback` as authorized redirect URI
    - Copy Client ID and Client Secret to `.env.local`
 
 4. **Get Google Refresh Token:**

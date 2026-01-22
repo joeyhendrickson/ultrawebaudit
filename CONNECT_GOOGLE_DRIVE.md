@@ -20,7 +20,7 @@ Make sure your `.env.local` file has these values:
 ```env
 GOOGLE_CLIENT_ID=your_client_id_here
 GOOGLE_CLIENT_SECRET=your_client_secret_here
-GOOGLE_REDIRECT_URI=http://localhost:3000/api/auth/google/callback
+GOOGLE_REDIRECT_URI=http://localhost:3003/api/auth/google/callback
 GOOGLE_DRIVE_FOLDER_ID=your_folder_id_here
 ```
 
@@ -32,14 +32,14 @@ GOOGLE_DRIVE_FOLDER_ID=your_folder_id_here
 npm run dev
 ```
 
-Your server should start at `http://localhost:3000`
+Your server should start at `http://localhost:3003`
 
 ### Step 3: Get the Authorization URL
 
 Open your browser and visit:
 
 ```
-http://localhost:3000/api/auth/google
+http://localhost:3003/api/auth/google
 ```
 
 You should see a JSON response like this:
@@ -65,7 +65,7 @@ You should see a JSON response like this:
 After authorizing, you'll be automatically redirected to:
 
 ```
-http://localhost:3000/api/auth/google/callback?code=...
+http://localhost:3003/api/auth/google/callback?code=...
 ```
 
 You should see a JSON response like this:
@@ -98,13 +98,13 @@ You can test the connection in several ways:
 Visit this URL in your browser (replace `YOUR_FOLDER_ID` with your actual folder ID):
 
 ```
-http://localhost:3000/api/google-drive/sync?folderId=YOUR_FOLDER_ID
+http://localhost:3003/api/google-drive/sync?folderId=YOUR_FOLDER_ID
 ```
 
 Or use curl:
 
 ```bash
-curl -X POST "http://localhost:3000/api/google-drive/sync?folderId=YOUR_FOLDER_ID"
+curl -X POST "http://localhost:3003/api/google-drive/sync?folderId=YOUR_FOLDER_ID"
 ```
 
 If successful, you'll see a JSON response listing the files in your folder.
@@ -134,7 +134,7 @@ Once connected, here's what happens:
 - **Solution**: 
   1. Go to Google Cloud Console > APIs & Services > Credentials
   2. Edit your OAuth 2.0 Client ID
-  3. Make sure the redirect URI matches exactly: `http://localhost:3000/api/auth/google/callback`
+  3. Make sure the redirect URI matches exactly: `http://localhost:3003/api/auth/google/callback`
 
 ### "Access denied" or "Insufficient permissions"
 

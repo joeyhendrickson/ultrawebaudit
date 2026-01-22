@@ -41,9 +41,19 @@ export default function DocumentBrowser() {
       
       if (response.ok && data.files) {
         setDocuments(data.files);
+      } else {
+        console.error('Error loading documents:', data.error || data.details || 'Unknown error');
+        // Show error to user
+        if (data.error || data.details) {
+          alert(`Failed to load documents: ${data.error || data.details}\n\nMake sure GOOGLE_DRIVE_FOLDER_ID is set and you have authorized Google Drive access.`);
+        }
+        setDocuments([]);
       }
     } catch (error) {
       console.error('Error loading documents:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      alert(`Failed to load documents: ${errorMessage}\n\nPlease check your browser console for more details.`);
+      setDocuments([]);
     } finally {
       setLoading(false);
     }

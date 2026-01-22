@@ -22,7 +22,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       files: files.map((file) => ({
-        id: file.id,
+        fileId: file.id,
+        id: file.id, // Keep for backwards compatibility
         name: file.name,
         title: file.name,
         mimeType: file.mimeType,

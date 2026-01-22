@@ -25,7 +25,7 @@ This will print a URL. **Open it in your browser**.
 2. **Grant all permissions** when prompted
 3. You'll be redirected to a URL that looks like:
    ```
-   http://localhost:3000/api/auth/google/callback?code=4/0Aean...
+   http://localhost:3003/api/auth/google/callback?code=4/0Aean...
    ```
 
 ### Step 3: Extract the Code
